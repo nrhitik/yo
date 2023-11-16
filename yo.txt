@@ -1,0 +1,360 @@
+###################practicle 1#################
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv("uber.csv")
+df
+
+df.info()
+
+df.shape
+
+df.head()
+
+df.isnull()
+
+df.drop(columns=['Unnamed: 0','key'], inplace = True)
+df
+
+df.isnull().sum()
+
+df['dropoff_latitude'].fillna(value=df['dropoff_latitude'].mean(),inplace=True) 
+df['dropoff_longitude'].fillna(value=df['dropoff_longitude'].mean(),inplace=True) 
+
+df.pickup_datetime = pd.to_datetime(df.pickup_datetime)
+df.dtypes
+
+df = df.assign(hour = df.pickup_datetime.dt.hour,
+               day = df.pickup_datetime.dt.day,
+               month = df.pickup_datetime.dt.month,
+               year = df.pickup_datetime.dt.year,
+               dayofweek = df.pickup_datetime.dt.dayofweek)
+
+df
+
+df = df.drop(['pickup_datetime'], axis = 1)
+df
+
+from math import *
+
+def distance_formula(longitude1,latitude1,longitude2,latitude2):
+    travel_dist = []
+    for pos in range(len(longitude1)):
+        lon1, lan1, lon2, lan2 = map(radians, [longitude1[pos], latitude1[pos]])
+        dist_lon = lon2 - lon1
+        dist_lan = lan2 - lan1
+        a = sin(dist_lan / 2) ** 2 + cos(lan1) * cos(lan2) * sin(dist_lon / 2) **2
+        # Radius of Earth = 6371
+        c = 2 * asin(sqrt(a)) * 6371
+        travel_dist.append(c)
+    return travel_dist
+
+def distance_formula(longitude1, latitude1, longitude2, latitude2):
+    distance = haversine_distance(latitude1, longitude1, latitude2, longitude2)    
+    return distance
+
+df.plot(kind = 'box', subplots = True, layout = (6,2), figsize = (15,20)) # Boxplot
+plt.show()
+
+def remove_outlier(df1, col):
+    Q1 = df1[col].quantile(0.25)
+    Q3 = df1[col].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_whisker = Q1 - 1.5 * IQR
+    upper_whisker = Q3 + 1.5 * IQR
+    df[col] = np.clip(df1[col] , lower_whisker , upper_whisker)
+    return df1
+def treat_outliers_all(df1, col_list):
+    for c in col_list:
+        df1 = remove_outlier(df, c)
+    return df1	
+
+df = treat_outliers_all(df, df.iloc[:,0::])
+
+df.plot(kind = 'box', subplots = True, layout = (7,2), figsize = (15,20))
+plt.show()
+
+corr = df.corr()
+corr
+
+fig,axis = plt.subplots(figsize = (10,6))
+sns.heatmap(df.corr(),annot = True)
+
+df_x = df[['pickup_longitude','pickup_latitude','dropoff_longitude','dropoff_latitude']]
+df_y = df['fare_amount']
+
+x_train, x_test, y_train, y_test = train_test_split(df_x, df_y, test_size = 0.2)
+
+df
+
+from sklearn.linear_model import LinearRegression
+reg = LinearRegression()
+reg.fit(x_train, y_train)
+
+y_pred_lin = reg.predict(x_test)
+print(y_pred_lin)
+
+from sklearn.ensemble import RandomForestRegressor
+rf = RandomForestRegressor(n_estimators = 100)
+rf.fit(x_train, y_train)
+
+y_pred_rf = rf.predict(x_test)
+print(y_pred_rf)
+
+cols = ['Model', 'RMSE', 'R-squared']
+
+result_tabulation = pd.DataFrame(columns = cols)
+
+from sklearn import metrics
+from sklearn.metrics import r2_score
+# Assuming 'result_tabulation' is a DataFrame or initializing it as a DataFrame
+result_tabulation = pd.DataFrame(columns=['Model', 'RMSE', 'R-Squared'])
+# Your calculations
+reg_RMSE = np.sqrt(metrics.mean_absolute_error(y_test, y_pred_lin))
+reg_squared = r2_score(y_test, y_pred_lin)
+full_metrics = pd.Series({'Model': 'Linear Regression', 'RMSE': reg_RMSE, 'R-Squared': reg_squared})
+# Appending the metrics to the DataFrame
+result_tabulation = result_tabulation.append(full_metrics, ignore_index=True)
+result_tabulation
+
+rf_RMSE = np.sqrt(metrics.mean_squared_error(y_test, y_pred_rf))
+rf_squared = r2_score(y_test, y_pred_rf)
+full_metrics = pd.Series({'Model': 'Linear Regression', 'RMSE': rf_RMSE, 'R-Squared': rf_squared})
+result_tabulation = result_tabulation.append(full_metrics, ignore_index = True)
+result_tabulation 
+
+############practicle 2###########################
+import pandas as pd
+import numpy as np 
+import seaborn as sns 
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('emails.csv')
+df
+
+df.head()
+
+df.tail()
+
+df.dtypes
+
+df
+
+x = df.drop(['Email No.','Prediction'], axis = 1)
+x
+
+y = df['Prediction']
+y
+
+y.value_counts
+
+sns.countplot(x=y)
+
+# Feature Scaling
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+x_scale = scaler.fit_transform(x)
+x_scale
+
+# Cross Validation
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_scale, y, test_size = 0.46, random_state = 46)
+
+x_train.shape
+
+x_scale.shape
+
+x_test.shape
+
+# Importing The Model
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+knn.fit(x_train, y_train)
+
+y_train = knn.predict(x_test)
+
+from sklearn.metrics import accuracy_score,classification_report,ConfusionMatrixDisplay
+ConfusionMatrixDisplay.from_predictions(y_test,y_train)
+
+accuracy_score(y_test, y_train)
+
+print(classification_report(y_test,y_train))
+
+#####################practicle 3#############################
+import pandas as pd
+import numpy as np 
+import seaborn as sns 
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('Churn_Modelling.csv')
+df
+
+df.describe
+
+df.info()
+
+df.shape
+
+df.size
+
+x = df.drop(['Geography', 'Gender', 'Surname','Exited'], axis = 1)
+x
+
+y = df['Exited']
+
+sns.countplot(x=y)
+
+# Feature Scaling
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+
+x_scale = scaler.fit_transform(x)
+x_scale
+
+# Cross Validation
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_scale,y,test_size = 0.46,random_state=46)
+
+x_train.shape
+
+x_scale.shape
+
+x_test.shape
+
+from sklearn.neural_network import MLPClassifier
+neural = MLPClassifier(hidden_layer_sizes=(100,100,100),max_iter = 100, activation='relu',random_state = 46)
+
+neural.fit(x_train,y_train)
+
+y_pred = neural.predict(x_test)
+
+y_pred
+
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score,classification_report
+ConfusionMatrixDisplay.from_predictions(y_test,y_pred)
+
+accuracy_score(y_test,y_pred)
+
+print(classification_report(y_test,y_pred))
+
+!pip install imbalanced-learn
+
+from imblearn.over_sampling import RandomOverSampler
+ros = RandomOverSampler(random_state = 0)
+x_balance, y_balance = ros.fit_resample(x,y) 
+
+sns.countplot(x=y_balance)
+
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+scale = scaler.fit_transform(x_balance)
+
+x_scale
+
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_scale, y,test_size = 0.3, random_state = 0)
+
+x_train.shape
+
+x_test.shape
+
+x_scale.shape
+
+from sklearn.neural_network import MLPClassifier
+neural = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter = 100, activation = 'relu', random_state = 0)
+
+neural.fit(x_train, y_train)
+
+y_pred = neural.predict(x_test)
+
+y_pred
+
+from sklearn.metrics import ConfusionMatrixDisplay,accuracy_score,classification_report
+ConfusionMatrixDisplay.from_predictions(y_test,y_pred)
+
+accuracy_score(y_test,y_pred)
+
+print(classification_report(y_test, y_pred))
+
+###############practicle 4##################
+x = 2
+LR = 0.018
+precision = 0.00001
+prev_step_size = 1
+max_iter = 10000
+itr = 0
+gd = []
+
+gf = lambda x : (x+3) ** 2
+
+while (precision < prev_step_size and itr < max_iter):
+    prv = x
+    x = x - LR* gf(prv)
+    prev_step_size = abs(x - prv)
+    itr += 1
+    print("itr : ", itr, "value", x)
+    gd.append(x)
+
+import matplotlib.pyplot as plt
+
+plt.plot(gd)
+
+#################practicle 5########################
+import pandas as pd
+import numpy as np 
+import seaborn as sns
+
+df = pd.read_csv('diabetes.csv')
+df
+
+df.info()
+
+df.describe()
+
+df.columns
+
+df.size
+
+df.shape
+
+df.head()
+
+df.tail()
+
+df.dtypes
+
+x = df.drop(['Outcome'], axis = 1)
+x
+
+y = df['Outcome']
+y
+
+sns.countplot(x=y)
+
+y.value_counts
+
+# Feature Scaling
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+x_scale = scaler.fit_transform(x)
+x_scale
+
+# Cross Validation
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_scale, y, test_size = 0.18, random_state = 0)
+
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+knn.fit(x_train, y_train)
+
+y_pred = knn.predict(x_test)
+
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, classification_report
+ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
+
+accuracy_score(y_test, y_pred)
+
+print(classification_report(y_test, y_pred))
